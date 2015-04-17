@@ -1,0 +1,17 @@
+Automata rules for traversing the edge of a square cluster:
+  1) Turn left when possible or go straight or right; in that order
+  2) Never traverse to an inner/covered node
+  3) Never traverse to a clear node (implied by left hand turn) unless drawing a sqaure
+  4) Never traverse to an edge node only occupied by another automata's square cluster
+  4) Don't traverse to double edge node unless all other options have been exhausted 
+  5) Stop and go to drawing mode when there is free space on the right 
+
+Automata rules for drawing a square:
+  1) Check the sizes of any adjacent squares and take a random proportion of the largest as the desired size of the new square
+  2) Turn right to draw the first edge perpendicular to the existing edge
+  3) Count the number of nodes successfully traversed between corners
+  4) Never traverse to an inner node
+  5) Never traverse two consequetive double edge nodes
+  6) If the way is blocked, reduce the square size to the number of nodes successfully traversed on the current side and restart drawing the square
+
+

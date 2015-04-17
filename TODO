@@ -1,0 +1,6 @@
+1) Render THREE.js scene behind HTML
+2) Render cubes 
+3) Colour cubes
+4) Work out algorithm to map cubes out in an interesting pattern of sizes and colours
+5) Implement algorithm
+6) Add lighting and or interesting shader effect
