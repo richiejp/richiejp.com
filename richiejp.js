@@ -1,10 +1,42 @@
-var cubeGrid = function(xcount, ycount){
+var cubeGrid = function(
+    xcount, 
+    ycount, 
+    clusterCount,
+    initialSquareSize,
+    maxChildProportion,
+    minChildProportion){
   var me = {};
   var grid = [];
-  for(var i = 0; i < xcount * ycount; i++){
-    grid[i] = 
-  var createNode = function(x, y){
+
+  var allocGrid = function(x, y){
+    var g = [];
+    for(var i = 0; i < x * y; i++){
+      g[i] = createNode(); 
+    }
   }
+
+  var createNode = function(){
+    return { 
+      edgeSquares: [ ],
+      coveringSquare: null
+    };
+  }
+
+  var createAutomaton = function(x, y){ }
+
+  var createSquare = function() { }
+
+  var traceSquare = function(a) { }
+
+  var advanceAutomaton = function(a) { }
+
+  me.doStep = function() { }
+
+  me.automatonMovedCB = function(automaton) { }
+
+  me.createdSquareCB = function(automaton, square) { }
+
+}
 var scene = new THREE.Scene();
 var camera = new THREE.PerspectiveCamera(
     75, 
