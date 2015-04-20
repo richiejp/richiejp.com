@@ -1,4 +1,4 @@
-var cubeGrid = function(
+var cubeGrid = ( function(
     xcount, 
     ycount, 
     clusterCount,
@@ -14,6 +14,7 @@ var cubeGrid = function(
     for(var i = 0; i < x * y; i++){
       g.push( createNode() ); 
     }
+    return g;
   }
 
   var createNode = function(){
@@ -35,7 +36,7 @@ var cubeGrid = function(
   var createSquare = function() { }
 
   var getNode = function(x, y) {
-    return g[ x + y * xcount ];
+    return grid[ x + y * xcount ];
   }
 
   var getCurrentNode = function(a) {
@@ -63,8 +64,8 @@ var cubeGrid = function(
   var getAdjacentNodes = function(a) {
     var o = a.orientation;
     var nodes = [
-      getAdjacentNode( a, o );
-    ]
+      getAdjacentNode( a, o )
+    ];
 
     for( var i = 0; i < 3; i++ ){
       o = turnLeft( o );
@@ -78,7 +79,7 @@ var cubeGrid = function(
     return node.edgeSquares.count > 1;
   }
 
-  var canTrace = function(toNode, fromNode) {
+  var canTrace = function( toNode, fromNode ) {
     if( toNode.coveringSquare !== null ){
       return false;
     } else if( isDoubleEdge( toNode ) && isDoubleEdge( fromNode ) ) { 
@@ -89,7 +90,7 @@ var cubeGrid = function(
 
   var getLargestNieghbor = function(a) {
     var nodes = getAdjacentNodes(a);
-    sizes = nodes.map( function(n){ return n.size; } );
+    sizes = nodes.map( function(n){ return n.coveringSquare.size; } );
     sizes.push( 0 );
     return Math.max.apply( null, sizes );
   }
@@ -103,8 +104,8 @@ var cubeGrid = function(
   }
 
   var move = function( a ) {
-    a.x += a.o[ 0 ];
-    a.y += a.o[ 1 ];
+    a.x += a.orientation[ 0 ];
+    a.y += a.orientation[ 1 ];
   }
 
   var traceSquare = function( a ) { 
@@ -112,7 +113,7 @@ var cubeGrid = function(
     var startPos = [ a.x, a.y, o[ 0 ], o[ 1 ] ];
     var traceNodes = [ ];
     var side = 0;
-    var size = getLargestNieghbor( a );
+    var size = getLargestNieghbor( a )
       * getRandom( minChildProportion, maxChildProportion );
     if( size === 0 ) {
       size = initialSquareSize;
@@ -164,21 +165,22 @@ var cubeGrid = function(
     
   }
 
-  me.automatonMovedCB = function(automaton) { }
+  me.automatonMovedCB = function( automaton ) { }
 
-  me.createdSquareCB = function(automaton, square) { }
+  me.createdSquareCB = function( automaton, square ) { }
 
   //Init grid
-  allocGrid( xcount, ycount );
+  grid = allocGrid( xcount, ycount );
   automatons.push( createAutomaton( 
       Math.floor( xcount / 4 ),
       Math.floor( ycount / 4 ),
       0xff0000 )); 
 
-  automatons.map(traceSquare);
+  automatons.map( traceSquare );
 
   return me;
-}
+} )( 500, 500, 1, 100, 19 / 25, 3 / 4 );
+
 var scene = new THREE.Scene();
 var camera = new THREE.PerspectiveCamera(
     75, 
@@ -200,7 +202,7 @@ var plane = new THREE.Mesh(
     new THREE.MeshBasicMaterial( { color: 0xffffff } ));
 scene.add( plane );
 
-camera.position.z = 5;
+camera.position.z = 500;
 
 function render() {
   requestAnimationFrame( render );
