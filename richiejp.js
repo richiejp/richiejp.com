@@ -121,7 +121,7 @@ var cubeGrid = function(
     var current = null;
     var next = null;
     for( var c = 0; side < 4; c++ ) {
-      if(c === size ) {
+      if(c > size ) {
 	side++;
 	a.orientation = turnRight( o );
       }
@@ -145,7 +145,13 @@ var cubeGrid = function(
       }
     }
 
-    for( var x = 0, y = 0; 
+    var square = createSquare( a, size );
+
+    for( var x = startPos[ 0 ] + 1; x < size; x++ ) {
+      for( var y = startPos[ 1 ] + 1; y < size; y++ ) {
+       	getNode( x, y ).coveringSquare = square;
+      }
+    }
 
     traceNodes.forEach( function( n ) {
       n.edgeSquare.push( square );
@@ -154,7 +160,9 @@ var cubeGrid = function(
 
   var advanceAutomaton = function(a) { }
 
-  me.doStep = function() { }
+  me.doStep = function() {
+    
+  }
 
   me.automatonMovedCB = function(automaton) { }
 
