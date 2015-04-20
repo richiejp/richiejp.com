@@ -7,11 +7,12 @@ var cubeGrid = function(
     minChildProportion){
   var me = {};
   var grid = [];
+  var automatons = [];
 
   var allocGrid = function(x, y){
     var g = [];
     for(var i = 0; i < x * y; i++){
-      g[i] = createNode(); 
+      g.push( createNode() ); 
     }
   }
 
@@ -22,11 +23,134 @@ var cubeGrid = function(
     };
   }
 
-  var createAutomaton = function(x, y){ }
+  var createAutomaton = function(x, y, colour){
+    return {
+      colour: colour,
+      x: x,
+      y: y,
+      orientation: [0, 1]
+    }
+  }
 
   var createSquare = function() { }
 
-  var traceSquare = function(a) { }
+  var getNode = function(x, y) {
+    return g[ x + y * xcount ];
+  }
+
+  var getCurrentNode = function(a) {
+    return getNode( a.x, a.y );
+  }
+
+  var turnLeft = function(orientation) {
+    var o = [];
+    o.push( orientation[1] );
+    o.push( -orientation[0] );
+    return o;
+  }
+
+  var turnRight = function(orientation) {
+    var o = [];
+    o.push( -orientation[1] );
+    o.push( orientation[0] );
+    return o;
+  }
+
+  var getAdjacentNode = function(a, o) {
+    return getNode( a.x + o[0], a.y + o[1] );
+  }
+
+  var getAdjacentNodes = function(a) {
+    var o = a.orientation;
+    var nodes = [
+      getAdjacentNode( a, o );
+    ]
+
+    for( var i = 0; i < 3; i++ ){
+      o = turnLeft( o );
+      nodes.push( getAdjacentNode( a, o ) );
+    }
+
+    return nodes;
+  }
+
+  var isDoubleEdge = function( node ) {
+    return node.edgeSquares.count > 1;
+  }
+
+  var canTrace = function(toNode, fromNode) {
+    if( toNode.coveringSquare !== null ){
+      return false;
+    } else if( isDoubleEdge( toNode ) && isDoubleEdge( fromNode ) ) { 
+      return false;
+    }
+    return true;
+  }
+
+  var getLargestNieghbor = function(a) {
+    var nodes = getAdjacentNodes(a);
+    sizes = nodes.map( function(n){ return n.size; } );
+    sizes.push( 0 );
+    return Math.max.apply( null, sizes );
+  }
+  
+  var getRandom = function( min, max ) {
+    return Math.random() * (max - min) + min;
+  }
+
+  var getRandomInt = function( min, max ) {
+    return Math.floor( Math.random() * (max - min) + min );
+  }
+
+  var move = function( a ) {
+    a.x += a.o[ 0 ];
+    a.y += a.o[ 1 ];
+  }
+
+  var traceSquare = function( a ) { 
+    var o = a.orientation;
+    var startPos = [ a.x, a.y, o[ 0 ], o[ 1 ] ];
+    var traceNodes = [ ];
+    var side = 0;
+    var size = getLargestNieghbor( a );
+      * getRandom( minChildProportion, maxChildProportion );
+    if( size === 0 ) {
+      size = initialSquareSize;
+    }
+
+    var current = null;
+    var next = null;
+    for( var c = 0; side < 4; c++ ) {
+      if(c === size ) {
+	side++;
+	a.orientation = turnRight( o );
+      }
+      current = getCurrentNode( a );
+      next = getAdjacentNode( a, o );
+      if( canTrace( next, current ) ) {
+	traceNodes.push( current );
+	move( a );
+      } else {
+        if( --size < 1 ) {
+	  return;
+	} else {
+	  a.x = startPos[ 0 ];
+	  a.y = startPos[ 1 ];
+	  a.orientation[ 0 ] = startPos[ 2 ];
+	  a.orientation[ 1 ] = startPos[ 3 ]; 
+	  c = 0;
+	  side = 0;
+	  traceNodes = [ ];
+	}
+      }
+    }
+
+    for( var x = 0, y = 0; 
+
+    traceNodes.forEach( function( n ) {
+      n.edgeSquare.push( square );
+    } );
+  }
 
   var advanceAutomaton = function(a) { }
 
@@ -36,6 +160,16 @@ var cubeGrid = function(
 
   me.createdSquareCB = function(automaton, square) { }
 
+  //Init grid
+  allocGrid( xcount, ycount );
+  automatons.push( createAutomaton( 
+      Math.floor( xcount / 4 ),
+      Math.floor( ycount / 4 ),
+      0xff0000 )); 
+
+  automatons.map(traceSquare);
+
+  return me;
 }
 var scene = new THREE.Scene();
 var camera = new THREE.PerspectiveCamera(
