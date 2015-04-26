@@ -124,8 +124,10 @@ var cubeGrid = ( function(
   };
 
   var traceSquare = function( a ) { 
-    var startPos = [ a.x, a.y, o[ 0 ], o[ 1 ] ];
+    var startPos = [ a.x, a.y, 
+      a.orientation[ 0 ], a.orientation[ 1 ] ];
     var topLeft = null;
+    var traceNodes = [ ];
     var size = getLargestNieghbor( a )
       * getRandom( minChildProportion, maxChildProportion );
     if( size === 0 ) {
@@ -135,7 +137,6 @@ var cubeGrid = ( function(
     var doTrace  = function( ) {
       var current = null;
       var next = null;
-      var traceNodes = [ ];
       var side = 0;
       var o = startPos.slice(2, 4);
       a.x = startPos[ 0 ];
@@ -195,13 +196,23 @@ var cubeGrid = ( function(
 
   me.createdSquareCB = function( square ) { }
 
-  me.initGrid = function( ) {
+  me.init = function( ) {
     grid = allocGrid( xcount, ycount );
     automatons.push( createAutomaton( 
 	Math.floor( xcount / 4 ),
 	Math.floor( ycount / 4 ),
 	0xff0000 
-    )); 
+    ) ); 
+    automatons.push( createAutomaton(
+	Math.floor( xcount * 3 / 4 ),
+	Math.floor( ycount * 3 / 4 ),
+	0x00ff00
+    ) );
+    automatons.push( createAutomaton(
+	Math.floor( xcount / 2 ),
+	Math.floor( ycount / 2 ),
+	0x0000ff
+    ) );
 
     automatons.map( traceSquare );
   }
@@ -224,6 +235,28 @@ cubeGrid.automatonCreatedCB = function( automaton ) {
   scene.add( cube );
 };
 
+cubeGrid.automatonMovedCB = function( automaton ) {
+
+};
+
+cubeGrid.createdSquareCB = function( square ) {
+  var s = square.size;
+  var cube = new THREE.Mesh(
+      new THREE.BoxGeometry( s, s, 200 / s ),
+      new THREE.MeshBasicMaterial( { 
+	color: square.automaton.colour
+      } )
+  );
+  var m = new THREE.Matrix4();
+  m.makeTranslation(
+      square.topLeft[ 0 ],
+      square.topLeft[ 1 ],
+      0
+  );
+  cube.applyMatrix( m );
+  scene.add( cube );
+};
+
 var scene = new THREE.Scene();
 var camera = new THREE.PerspectiveCamera(
     75, 
@@ -237,6 +270,8 @@ renderer.setSize( window.innerWidth, window.innerHeight );
 renderer.setClearColor( 0xffffff, 1 );
 document.body.appendChild( renderer.domElement );
 
+camera.position.x = 250;
+camera.position.y = 250;
 camera.position.z = 500;
 
 cubeGrid.init( );
