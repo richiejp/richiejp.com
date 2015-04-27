@@ -29,6 +29,7 @@ var cubeGrid = ( function(
       colour: colour,
       x: x,
       y: y,
+      lastAction: "move",
       orientation: [0, 1],
       sceneId: null
     };
@@ -79,22 +80,27 @@ var cubeGrid = ( function(
   var getAdjacentNode = function(a, o) {
     var ax = a.x + o[0];
     var ay = a.y + o[1];
-    if( ax < xcount && ay < ycount ) {
+    if( ax < xcount && ay < ycount
+	&& ax > -1 && ay > -1 ) {
       return getNode( ax, ay );
     } else {
       return null;
     }
   };
 
-  var getAdjacentNodes = function(a) {
+  var getAdjacentNodes = function( a ) {
     var o = a.orientation;
+    var n = null;
     var nodes = [
       getAdjacentNode( a, o )
     ];
 
     for( var i = 0; i < 3; i++ ){
       o = turnLeft( o );
-      nodes.push( getAdjacentNode( a, o ) );
+      n = getAdjacentNode( a, o );
+      if( n !== null ) {
+	nodes.push( n );
+      }
     }
 
     return nodes;
@@ -119,14 +125,18 @@ var cubeGrid = ( function(
   };
 
   var getLargestNieghbor = function(a) {
-    var nodes = getAdjacentNodes(a);
+    var nodes = getAdjacentNodes( a );
     sizes = nodes.map( 
-      function(n){ 
+      function( n ){ 
+	var s = [ 0 ];
 	if( n.coveringSquare ) {
-	  return n.coveringSquare.size; 
+	  s.push( n.coveringSquare.size ); 
 	} else {
-	  return 0;
+	  n.edgeSquares.forEach( function( cs ) {
+	    s.push( cs.size );
+	  } );
 	}
+	return Math.max.apply( null, s );
       } 
     );
     return Math.max.apply( null, sizes );
@@ -145,55 +155,62 @@ var cubeGrid = ( function(
     a.y += a.orientation[ 1 ];
   };
 
-  var traceSquare = function( a ) { 
-    var startPos = [ a.x, a.y, 
-      a.orientation[ 0 ], a.orientation[ 1 ] ];
+  var traceSquare = function( automaton ) { 
+    var size;
     var topLeft = [ ];
     var traceNodes = [ ];
-    var size = getLargestNieghbor( a )
-      * getRandom( minChildProportion, maxChildProportion );
-    if( size === 0 ) {
-      size = initialSquareSize;
-    }
 
-    var doTrace  = function( ) {
+    var doTrace  = function( s ) {
       var current = null;
       var next = null;
       var side = 0;
-      var o = startPos.slice(2, 4);
-      a.x = startPos[ 0 ];
-      a.y = startPos[ 1 ];
-      a.orientation = o;
-      topLeft = startPos.slice(0, 2);
+      var a = { 
+	x: automaton.x,
+	y: automaton.y,
+	orientation: automaton.orientation
+      };
+      traceNodes = [ ];
+      topLeft = [ a.x, a.y ];
 
       for( var c = 1; side < 4; c++ ) {
-	if(c >= size ) {
+	if(c >= s ) {
 	  side++;
-	  o = turnRight( o );
-	  a.orientation = o;
+	  a.orientation = turnRight( a.orientation );
 	  c = 1;
 	}
 	current = getCurrentNode( a );
 	traceNodes.push( current );
 	topLeft[ 0 ] = Math.min( a.x, topLeft[ 0 ] );
 	topLeft[ 1 ] = Math.min( a.y, topLeft[ 1 ] );
-	next = getAdjacentNode( a, o );
+	next = getAdjacentNode( a, a.orientation );
 	if( canTrace( next, current ) ) {
 	  move( a );
 	} else {
+	  //console.log("failed on side " + side);
 	  return false;
 	}
       }
       return true;
     };
 
-    while( !doTrace( ) ) {
-      if( --size < 1 ) {
-	return;
+    if( !doTrace( 2 ) ) {
+      //console.warn("Could not even do a little one!");
+      return false;
+    } 
+
+    size = Math.floor( getLargestNieghbor( automaton )
+	   * getRandom( minChildProportion, maxChildProportion ) );
+    if( size === 0 ) {
+      size = initialSquareSize;
+    }
+
+    while( !doTrace( size ) ) {
+      if( --size < 3 ) {
+	return false;
       }
     }
 
-    var square = createSquare( a, topLeft, size );
+    var square = createSquare( automaton, topLeft, size );
 
     for( var x = topLeft[ 0 ] + 1; x < topLeft[ 0 ] + size - 1; x++ ) {
       for( var y = topLeft[ 1 ] + 1; y < topLeft[ 1 ] + size - 1; y++ ) {
@@ -206,6 +223,7 @@ var cubeGrid = ( function(
     } );
 
     me.createdSquareCB( square );
+    return true;
   }
 
   var okAdvance = function( a, n ) {
@@ -216,10 +234,10 @@ var cubeGrid = ( function(
 
   var niceAdvance = function( a, n ) {
     return isSingleEdge( n ) && 
-      getAutomatons( n ).pop() === a;
+      getAutomatons( n )[ 0 ] === a;
   }
 
-  var advanceAutomaton = function(a) {
+  var turnAutomaton = function(a) {
     var o = a.orientation;
     var directions = [
       turnLeft( o ),
@@ -237,15 +255,19 @@ var cubeGrid = ( function(
       }
     } );
 
-    var success = possibilities.some( function( t ) {
+    var success = possibilities.some( function( t, i ) {
       if( niceAdvance( a, t.n ) ) {
 	a.orientation = t.o;
+	if( i === 2 ) {
+	  console.warn("Had to turn right");
+	}
 	return true;
       }
       return false;
     } );
 
     if( !success ) {
+      console.warn("Could not use nice route");
       success = possibilities.some( function( t ) {
 	if( okAdvance( a, t.n ) ) {
 	  a.orientation = t.o;
@@ -255,17 +277,27 @@ var cubeGrid = ( function(
       } );
     }
 
-    if( success ) {
-      move( a );
-      me.automatonMovedCB( a );
-    } else {
+    if( !success ) {
       console.error("Automaton could not find path!");
     }
-  }
+  };
+
+  var advanceAutomaton = function( a ) {
+    if( a.lastAction === "move" ) {
+      turnAutomaton( a );
+      a.lastAction = "turn";
+    } else {
+      move( a );
+      me.automatonMovedCB( a );
+      a.lastAction = "move";
+    }
+  };
 
   me.doSim = function() {
-    automatons.map( function( a ) {
-      advanceAutomaton( a );
+    automatons.forEach( function( a ) {
+      if( !traceSquare( a ) ) {
+	advanceAutomaton( a );
+      }
     } );
   }
 
@@ -293,7 +325,10 @@ var cubeGrid = ( function(
 	0x0000ff
     ) );
 
-    automatons.map( traceSquare );
+    automatons.forEach( traceSquare );
+    automatons.forEach( function( a ) {
+      a.orientation = [ 0, -1 ];
+    } );
   }
 
   me.toString = function( ) {
@@ -303,7 +338,11 @@ var cubeGrid = ( function(
       for(x = 0; x < ycount; x++ ) {
 	n = getNode( x, y );
 	if( n.coveringSquare !== null ) {
-	  str += 'X ';
+	  if( n.edgeSquares.length > 0 ) {
+	    str += '! ';
+	  } else {
+	    str += 'X ';
+	  }
 	} else if ( n.edgeSquares.length > 0 ) {
 	  str += '+ ';
 	} else {
@@ -316,12 +355,15 @@ var cubeGrid = ( function(
   }
 
   return me;
-} )( 500, 500, 1, 100, 19 / 25, 3 / 4 );
+} )( 200, 200, 1, 50, 4 / 5, 3 / 4 );
 
 var maxSimTimeDelta = 100;
 var lastSimTime = performance.now( );
 var lastTime = lastSimTime;
 var delta = 0;
+var cubeMaterial = new THREE.MeshLambertMaterial( {
+  color: 0xaaaaaa,
+} );
 
 cubeGrid.automatonCreatedCB = function( automaton ) {
   var cube = new THREE.Mesh( 
@@ -349,12 +391,12 @@ cubeGrid.automatonMovedCB = function( automaton ) {
 
 cubeGrid.createdSquareCB = function( square ) {
   var s = square.size;
+  var mat = cubeMaterial.clone();
   var cube = new THREE.Mesh(
-      new THREE.BoxGeometry( s, s, 200 / s ),
-      new THREE.MeshBasicMaterial( { 
-	color: square.automaton.colour
-      } )
+      new THREE.BoxGeometry( s, s, 300 / s ),
+      mat
   );
+  mat.color = square.automaton.colour;
   var m = new THREE.Matrix4();
   m.makeTranslation(
       square.topLeft[ 0 ] + s/2,
@@ -363,6 +405,7 @@ cubeGrid.createdSquareCB = function( square ) {
   );
   cube.applyMatrix( m );
   scene.add( cube );
+  console.log( '\n' + cubeGrid.toString() );
 };
 
 var scene = new THREE.Scene();
@@ -373,17 +416,21 @@ var camera = new THREE.PerspectiveCamera(
     1000
 );
 
+var light = new THREE.DirectionalLight( 0xffffff, 0.8 );
+light.position.set( 0, 0, 1 );
+scene.add( light );
+
 var renderer = new THREE.WebGLRenderer();
 renderer.setSize( window.innerWidth, window.innerHeight );
 renderer.setClearColor( 0xffffff, 1 );
 document.body.appendChild( renderer.domElement );
 
-camera.position.x = 250;
-camera.position.y = 250;
-camera.position.z = 250;
+camera.position.x = 125;
+camera.position.y = 125;
+camera.position.z = 200;
 
 cubeGrid.init( );
-//console.log( '\n' + cubeGrid.toString() );
+console.log( '\n' + cubeGrid.toString() );
 
 function render( timeStamp ) {
   delta = timeStamp - lastSimTime; 
