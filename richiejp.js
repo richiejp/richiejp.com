@@ -108,6 +108,10 @@ var cubeGrid = ( function(
     return nodes;
   };
 
+  var isEdge = function( node ) {
+    return node.edgeSquares.length > 0;
+  };
+
   var isSingleEdge = function( node ) {
     return node.edgeSquares.length === 1;
   };
@@ -227,8 +231,8 @@ var cubeGrid = ( function(
     return true;
   };
 
-  var okAdvance = function( a, n ) {
-    return isDoubleEdge( n ) && getAutomatons( n ).some( 
+  var isPassable = function( a, n ) {
+    return isEdge( n ) && getAutomatons( n ).some( 
 	function( na ) { return na === a; }
     );
   };
@@ -236,6 +240,15 @@ var cubeGrid = ( function(
   var niceAdvance = function( a, n ) {
     return isSingleEdge( n ) && 
       getAutomatons( n )[ 0 ] === a;
+  };
+
+  var getNodeCost = function( n ) {
+    var c = 0;
+    if( isDoubleEdge( n ) ) {
+      c += 3;
+    }
+    c += n.trodden * 6;
+    return c;
   };
 
   var turnAutomaton = function(a) {
@@ -248,47 +261,20 @@ var cubeGrid = ( function(
     var possibilities = [ ];
     directions.forEach( function( d, i ) {
       var an = getAdjacentNode( a, d );
-      if( an !== null ) {
+      if( an !== null && isPassable( a, an ) ) {
 	  possibilities.push( {
 	  n: an,
 	  o: d,
-	  i: i
+	  c: i + getNodeCost( an )
 	} );
       }
     } );
 
     possibilities.sort( function( ap, bp ) {
-      return (ap.i + ap.n.trodden * 3 ) - 
-	( bp.i + bp.n.trodden * 3 );
+      return ap.c - bp.c;
     } );
 
-    var success = possibilities.some( function( t, i ) {
-      if( niceAdvance( a, t.n ) ) {
-	a.orientation = t.o;
-	t.n.trodden += 1;
-	if( i === 2 ) {
-	  //console.warn("Had to turn right");
-	}
-	return true;
-      }
-      return false;
-    } );
-
-    if( !success ) {
-      console.warn("Could not use nice route");
-      success = possibilities.some( function( t ) {
-	if( okAdvance( a, t.n ) ) {
-	  a.orientation = t.o;
-	  t.n.trodden += 1;
-	  return true;
-	}
-	return false;
-      } );
-    }
-
-    if( !success ) {
-      console.error("Automaton could not find path!");
-    }
+    a.orientation = possibilities[ 0 ].o;
   };
 
   var advanceAutomaton = function( a ) {
@@ -297,6 +283,7 @@ var cubeGrid = ( function(
       a.lastAction = "turn";
     } else {
       move( a );
+      getCurrentNode( a ).trodden++;
       me.automatonMovedCB( a );
       a.lastAction = "move";
     }
@@ -368,7 +355,7 @@ var cubeGrid = ( function(
 
 ( function( ) {
   "use strict";
-  var maxSimTimeDelta = 50;
+  var maxSimTimeDelta = 25;
   var lastSimTime = performance.now( );
   var lastTime = lastSimTime;
   var delta = 0;
