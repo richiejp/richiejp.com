@@ -401,7 +401,7 @@ var cubeGrid = ( function(
 
   cubeGrid.createdSquareCB = function( square ) {
     var s = square.size;
-    var h = 10 * Math.log( 22 - s/4 );
+    var h = 20 * Math.log( 22 - s/4 );
     var cube = new THREE.Mesh(
 	new THREE.BoxGeometry( s, s, h ),
 	new THREE.MeshPhongMaterial( { 
@@ -423,12 +423,14 @@ var cubeGrid = ( function(
       75, 
       window.innerWidth / window.innerHeight,
       0.1,
-      1000
+      10000
   );
   var controls = new THREE.OrbitControls( camera );
   var worldlight = new THREE.DirectionalLight( 0xffffff, 0.8 );
   //light.position.set( 0, 0, 1 );
   scene.add( worldlight );
+  var fog = new THREE.FogExp2( 0xffffff, 0.0009 );
+  scene.fog = fog;
 
   var renderer = new THREE.WebGLRenderer( { 
     antialias: true
