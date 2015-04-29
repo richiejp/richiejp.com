@@ -386,6 +386,10 @@ var cubeGrid = ( function(
     var pointLight = new THREE.PointLight( 0xffffff, 1, 400 );
     pointLight.position.set( automaton.x, automaton.y, 200 );
     scene.add( pointLight );
+
+    pointLight = new THREE.PointLight( automaton.color, 1, 200 );
+    cube.add( pointLight );
+    pointLight.position.set( 0, 0, -100 );
   };
 
   cubeGrid.automatonMovedCB = function( automaton ) {
