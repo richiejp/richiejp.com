@@ -436,6 +436,7 @@ var cubeGrid = ( function(
   camera.position.x = 500;
   camera.position.y = 250;
   camera.position.z = 350;
+  controls.target = new THREE.Vector3( 500, 250, 0 );
 
   cubeGrid.init( );
   //console.log( '\n' + cubeGrid.toString() );
