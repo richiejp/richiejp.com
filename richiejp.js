@@ -421,7 +421,7 @@ var cubeGrid = ( function(
       0.1,
       1000
   );
-
+  var controls = new THREE.OrbitControls( camera );
   var worldlight = new THREE.DirectionalLight( 0xffffff, 0.8 );
   //light.position.set( 0, 0, 1 );
   scene.add( worldlight );
