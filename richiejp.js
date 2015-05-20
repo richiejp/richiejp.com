@@ -418,6 +418,8 @@ var cubeGrid = ( function(
     scene.add( cube );
   };
 
+//  var headerdiv = document.getElementById('header');
+//  var threediv = document.getElementById('threed');
   var scene = new THREE.Scene();
   var camera = new THREE.PerspectiveCamera(
       75, 
