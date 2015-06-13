@@ -367,6 +367,23 @@ var cubeGrid = ( function(
   var lastTime = lastSimTime;
   var delta = 0;
 
+  var createSpotLight = function(x, y, z, target){
+    var spotLight = new THREE.SpotLight( 0xffffff, 1, 10000, Math.PI/2, 2 );
+    spotLight.position.set( x, y, z );
+    if(target){
+      spotLight.target = target;
+    }
+    spotLight.castShadow = true;
+    spotLight.shadowCameraNear = 100;
+    spotLight.shadowCameraFar = 20000;
+    spotLight.shadowCameraFov = 120;
+    spotLight.shadowMapWidth = 4096;
+    spotLight.shadowMapHeight = 4096;
+    spotLight.shadowBias = 0.00001;
+    spotLight.shadowDarkness = 0.8;
+    return spotLight;
+  };
+
   cubeGrid.automatonCreatedCB = function( automaton ) {
     var cube = new THREE.Mesh( 
 	new THREE.BoxGeometry( 20, 20, 20 ),
@@ -383,13 +400,14 @@ var cubeGrid = ( function(
     automaton.sceneId = cube.id;
     scene.add( cube );
 
-    var pointLight = new THREE.PointLight( 0xffffff, 1, 400 );
-    pointLight.position.set( automaton.x, automaton.y, 200 );
-    scene.add( pointLight );
+    /*
+    var spotLight = createSpotLight(0, 0, 400, cube);
+    cube.add( spotLight );
+    */
 
-    pointLight = new THREE.PointLight( automaton.color, 1, 200 );
-    cube.add( pointLight );
-    pointLight.position.set( 0, 0, -100 );
+    //var pointLight = new THREE.PointLight( automaton.color, 1, 200 );
+    //cube.add( pointLight );
+    //pointLight.position.set( 0, 0, -100 );
   };
 
   cubeGrid.automatonMovedCB = function( automaton ) {
@@ -415,11 +433,11 @@ var cubeGrid = ( function(
 	h / 2
     );
     cube.applyMatrix( m );
+    cube.castShadow = true;
+    cube.receiveShadow = true;
     scene.add( cube );
   };
 
-//  var headerdiv = document.getElementById('header');
-//  var threediv = document.getElementById('threed');
   var scene = new THREE.Scene();
   var camera = new THREE.PerspectiveCamera(
       75, 
@@ -428,17 +446,24 @@ var cubeGrid = ( function(
       10000
   );
   var controls = new THREE.OrbitControls( camera );
-  var worldlight = new THREE.DirectionalLight( 0xffffff, 0.8 );
-  //light.position.set( 0, 0, 1 );
-  scene.add( worldlight );
-  var fog = new THREE.FogExp2( 0xffffff, 0.0009 );
+  //var worldLight = new THREE.DirectionalLight( 0xffffff, 0.8 );
+  var worldLight = createSpotLight(500, 500, 300);
+  worldLight.target.position.set(500, 250, 0);
+  scene.add( worldLight );
+  scene.add( worldLight.target );
+  var fog = new THREE.FogExp2( 0xffffff, 0.0005 );
   scene.fog = fog;
+  var ambLight = new THREE.AmbientLight ( 0x101010 );
+  scene.add( ambLight );
 
   var renderer = new THREE.WebGLRenderer( { 
-    antialias: true
+    antialias: true,
+    maxLights: 10
   } );
   renderer.setSize( window.innerWidth, window.innerHeight );
   renderer.setClearColor( 0xffffff, 1 );
+  renderer.shadowMapEnabled = true;
+  renderer.shadowMapType = THREE.PCFSoftShadowMap;
   document.body.appendChild( renderer.domElement );
 
   camera.position.x = 500;
