@@ -366,7 +366,7 @@ var cubeGrid = ( function(
   var lastSimTime = performance.now( );
   var lastTime = lastSimTime;
   var delta = 0;
-
+  var cubes;
   var createSpotLight = function(x, y, z, target){
     var spotLight = new THREE.SpotLight( 0xffffff, 1, 10000, Math.PI/2, 2 );
     spotLight.position.set( x, y, z );
@@ -418,24 +418,20 @@ var cubeGrid = ( function(
   };
 
   cubeGrid.createdSquareCB = function( square ) {
-    var s = square.size;
-    var h = 20 * Math.log( 22 - s/4 );
-    var cube = new THREE.Mesh(
-	new THREE.BoxGeometry( s, s, h ),
-	new THREE.MeshPhongMaterial( { 
-	  color: square.automaton.colour
-	} )
-    );
-    var m = new THREE.Matrix4();
+    var s = square.size,
+	h = 20 * Math.log( 22 - s/4 ),
+	geometry = new THREE.BoxGeometry( s, s, h ),//new THREE.BufferGeometry(),
+	cube, m;
+
+    //geometry.fromGeometry(new THREE.BoxGeometry( s, s, h ));
+    m = new THREE.Matrix4();
     m.makeTranslation(
 	square.topLeft[ 0 ] + s/2,
 	square.topLeft[ 1 ] + s/2,
 	h / 2
     );
-    cube.applyMatrix( m );
-    cube.castShadow = true;
-    cube.receiveShadow = true;
-    scene.add( cube );
+    cubes.geometry.merge(geometry, m);
+    cubes.geometry.groupsNeedUpdate = true;
   };
 
   var scene = new THREE.Scene();
@@ -455,6 +451,15 @@ var cubeGrid = ( function(
   scene.fog = fog;
   var ambLight = new THREE.AmbientLight ( 0x101010 );
   scene.add( ambLight );
+  cubes = new THREE.Mesh(
+	new THREE.Geometry(),
+	new THREE.MeshPhongMaterial( { 
+	  color: 0xff0000
+	} )
+    );
+  cubes.castShadow = true;
+  cubes.receiveShadow = true;
+  scene.add( cubes );
 
   var renderer = new THREE.WebGLRenderer( { 
     antialias: true,
