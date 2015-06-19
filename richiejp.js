@@ -366,7 +366,7 @@ var cubeGrid = ( function(
   var lastSimTime = performance.now( );
   var lastTime = lastSimTime;
   var delta = 0;
-  var cubes;
+  var cubes = {};
   var createSpotLight = function(x, y, z, target){
     var spotLight = new THREE.SpotLight( 0xffffff, 1, 10000, Math.PI/2, 2 );
     spotLight.position.set( x, y, z );
@@ -400,6 +400,17 @@ var cubeGrid = ( function(
     automaton.sceneId = cube.id;
     scene.add( cube );
 
+    cube = new THREE.Mesh(
+	new THREE.Geometry(),
+	new THREE.MeshPhongMaterial( { 
+	  color: automaton.colour
+	} )
+    );
+    cubes[ automaton.colour ] = cube;
+    cube.castShadow = true;
+    cube.receiveShadow = true;
+    scene.add( cube );
+
     /*
     var spotLight = createSpotLight(0, 0, 400, cube);
     cube.add( spotLight );
@@ -421,7 +432,8 @@ var cubeGrid = ( function(
     var s = square.size,
 	h = 20 * Math.log( 22 - s/4 ),
 	geometry = new THREE.BoxGeometry( s, s, h ),//new THREE.BufferGeometry(),
-	cube, m;
+	cube, m,
+	colour = square.automaton.colour;
 
     //geometry.fromGeometry(new THREE.BoxGeometry( s, s, h ));
     m = new THREE.Matrix4();
@@ -430,8 +442,8 @@ var cubeGrid = ( function(
 	square.topLeft[ 1 ] + s/2,
 	h / 2
     );
-    cubes.geometry.merge(geometry, m);
-    cubes.geometry.groupsNeedUpdate = true;
+    cubes[colour].geometry.merge(geometry, m);
+    cubes[colour].geometry.groupsNeedUpdate = true;
   };
 
   var scene = new THREE.Scene();
@@ -451,15 +463,6 @@ var cubeGrid = ( function(
   scene.fog = fog;
   var ambLight = new THREE.AmbientLight ( 0x101010 );
   scene.add( ambLight );
-  cubes = new THREE.Mesh(
-	new THREE.Geometry(),
-	new THREE.MeshPhongMaterial( { 
-	  color: 0xff0000
-	} )
-    );
-  cubes.castShadow = true;
-  cubes.receiveShadow = true;
-  scene.add( cubes );
 
   var renderer = new THREE.WebGLRenderer( { 
     antialias: true,
