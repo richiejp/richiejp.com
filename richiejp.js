@@ -315,17 +315,31 @@ var cubeGrid = ( function(
     automatons.push( createAutomaton( 
 	Math.floor( xcount / 4 ),
 	Math.floor( ycount / 4 ),
-	0xff0000 
+	0xAA9F39
     ) ); 
+
+    automatons.push( createAutomaton(
+	  Math.floor( xcount / 4),
+	  Math.floor( ycount * 3 / 4),
+	  0xFFE601
+    ));
+
     automatons.push( createAutomaton(
 	Math.floor( xcount * 3 / 4 ),
 	Math.floor( ycount * 3 / 4 ),
-	0x00ff00
+	0xAA5039
     ) );
+
+    automatons.push( createAutomaton(
+	  Math.floor( xcount * 3 / 4),
+	  Math.floor( ycount / 4 ),
+	  0xFF3601
+    ));
+
     automatons.push( createAutomaton(
 	Math.floor( xcount / 2 ),
 	Math.floor( ycount / 2 ),
-	0x0000ff
+	0x267257
     ) );
 
     automatons.forEach( traceSquare );
