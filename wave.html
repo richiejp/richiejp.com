@@ -24,8 +24,6 @@
     var three = mathbox.three;
     three.renderer.setClearColor(new THREE.Color(0xFFFFFF), 1.0);
 
-
-
     // Do stuff with mathbox,
     // for example: (see docs/intro.md)
 
@@ -67,30 +65,37 @@
 
     // Calibrate focus distance for units
     mathbox.set('focus', 1.5);
-    mathbox.set('speed', 5);
+
+    var wavePars = { 
+      magnitude: 10,
+      tension: 50,
+      damping: 0.5
+    };
 
     // Add some data
     var wavef = function(x, t){
       L = 3;			  //Length
-      Teq = 1;			  //Equilibrium Tension
+      Teq = wavePars.tension;			 
       M = 1;			  //Mass
       c = Math.sqrt(Teq * L / M); 
-      a = 0.1;			  //Damping coefficient
+      a = wavePars.damping;
       e = a * L /(2*M);
+      m = wavePars.magnitude;
       f = function(n){ 
 	return 1/(n*n)*Math.sin(x*Math.PI/L)*Math.cos(n*Math.PI*c*t/L);
       }
-      return 10/(Math.PI*Math.PI)*Math.exp(-e*t)
+      return m/(Math.PI*Math.PI)*Math.exp(-e*t)
 	*(f(1)-f(3)+f(5)-f(7)+f(9)-f(11)+f(13)-f(15)+f(17)-f(19));
     };
     var data =
       view
       .interval({
         expr: function (emit, x, i, t) {
-          emit(x, wavef(x + 1.5, t % 50));
+          emit(x, wavef(x + 1.5, t % 10));
         },
         width: 256,
         channels: 2,
+	live: true
       });
     
     // Draw a curve
@@ -101,69 +106,67 @@
         color: '#3090FF',
       });
 
-    // Draw some points
-    /*var points =
-      view
-      .point({
-        size: 8,
-        color: '#3090FF',
-      });
-    
-    // Draw vectors
-    var vector =
-      view.interval({
-        expr: function (emit, x, i, t) {
-          emit(x, 0);
-          emit(x, -Math.sin(x + t));
-        },
-        width: 64,
-        channels: 2,
-        items: 2,
-      })
-      .vector({
-        end: true,
-        width: 5,
-        color: '#50A000',
-      });
-    
-    // Draw ticks and labels
-    var scale =
-      view.scale({
-        divide: 10,
-      });
-    
-    var ticks =
-      view.ticks({
-        width: 5,
-        size: 15,
-        color: 'black',
-      });
-    
-    var format =
-      view.format({
-        digits: 2,
-        weight: 'bold',
-      });
+var domview = mathbox.cartesian({
+  range:[[-3, 3], [-2, 2]],
+  scale: [2, 1]
+});
 
-    var labels =
-      view.label({
-        color: 'red',
-        zIndex: 1,
-      });
-          
-    // Animate
-    var play = mathbox.play({
-      target: 'cartesian',
-      pace: 5,
-      to: 2,
-      loop: true,
-      script: [
-        {props: {range: [[-2, 2], [-1, 1]]}},
-        {props: {range: [[-4, 4], [-2, 2]]}},
-        {props: {range: [[-2, 2], [-1, 1]]}},
-      ]
-    });*/
-            
+domview.interval({
+  width: 3,
+  expr: function(emit, x, i, t){
+    emit(2, 2-i*.2);
+  },
+  channels: 2,
+});
+
+var onmaginput = function(maginput){ 
+  wavePars.magnitude = maginput.value; 
+};
+
+var ontensioninput = function(tensioninput){
+  wavePars.tension = tensioninput.value;
+};
+
+var ondampinginput = function(dampinginput){
+  wavePars.damping = dampinginput.value;
+};
+domview.html({
+  width: 3,
+  expr: function(emit, el, i, j, k, l, time){
+    var inputs = [[
+      el('label', null, 'Magnitude '),
+      el('input', 
+	  {id: 'magnitudeInput', 
+	   type: 'number', 
+	   oninput: 'onmaginput(this)',
+	   value: wavePars.magnitude}, 
+	 null)
+    ],[
+      el('label', null, 'Tension '),
+      el('input', 
+	  {id: 'tensionInput', 
+	   type: 'number',
+	   oninput: 'ontensioninput(this)',
+	   value: wavePars.tension
+	  }, 
+	null)
+    ],[
+      el('label', null, 'Damping '),
+      el('input', 
+	  {id: 'dampingInput', 
+	   type: 'number',
+	   oninput: 'ondampinginput(this)',
+	   value: wavePars.damping
+	  }, 
+	null)
+    ]];
+    emit(inputs[i]);
+  }
+}).dom({
+  snap: true,
+  pointerEvents: true
+});
+
   </script>
 </body>
 </html>
